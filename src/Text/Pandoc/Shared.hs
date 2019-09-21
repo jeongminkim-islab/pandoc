@@ -521,17 +521,13 @@ makeSections numbering mbBaseLevel bs =
   go (Div (dident,dclasses,dkvs)
        (Header level (ident,classes,kvs) title':ys) : xs) = do
     inner <- go (Header level (ident,classes,kvs) title':ys)
-    let inner' =
-          case inner of
-            (Div (dident',dclasses',dkvs') zs@(Header{}:zs') : ws)
-              | null dident ->
-                Div (dident',dclasses' ++ dclasses,dkvs' ++ dkvs) zs : ws
-              | otherwise -> -- keep id on header so we don't lose anchor
-                Div (dident,dclasses ++ dclasses',dkvs ++ dkvs')
-                  (Header level (dident',classes,kvs) title':zs') : ws
-            _ -> inner  -- shouldn't happen
+    let addAtts (Div (dident',"section":dclasses',dkvs') zs@(Header{}:_))
+             = Div (if null dident' then dident else dident',
+                    "section" : dclasses' ++ dclasses,
+                    dkvs' ++ dkvs) zs
+        addAtts x = x
     rest <- go xs
-    return $ inner' ++ rest
+    return $ map addAtts inner ++ rest
   go (Div attr xs : rest) = do
     xs' <- go xs
     rest' <- go rest
